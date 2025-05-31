@@ -19,7 +19,7 @@ default_args = {
 
 dag = DAG(
     dag_id="example_using_k8s_executor",
-    schedule_interval="0 1 * * *",
+    schedule_interval="*/2 * * * *",
     catchup=False,
     default_args=default_args,
 )
