@@ -37,14 +37,6 @@ with DAG(
     tags=["k8s", "pv", "etl"]
 ) as dag:
 
-    create_pv_pvc = PythonOperator(
-        task_id="create_pv_pvc",
-        python_callable=create_pv_and_pvc,
-        op_kwargs={
-            "config": nfs_pv_config
-        }
-    )
-
     volume = client.V1Volume(
         name="etl-storage",
         persistent_volume_claim=client.V1PersistentVolumeClaimVolumeSource(claim_name=PVC_NAME),
@@ -66,6 +58,14 @@ with DAG(
 
     }
 
+    create_pv_pvc = PythonOperator(
+        task_id="create_pv_pvc",
+        python_callable=create_pv_and_pvc,
+        op_kwargs={
+            "pv_config": nfs_pv_config
+        }
+    )
+
     extractor = KubernetesPodOperator(
         task_id="extractor",
         name="extractor",
@@ -84,7 +84,7 @@ with DAG(
         task_id="delete_pv_pvc",
         python_callable=delete_pv_and_pvc,
         op_kwargs={
-            "config": delete_pv_config
+            "pv_config": delete_pv_config
         },
         trigger_rule="all_done",
     )
