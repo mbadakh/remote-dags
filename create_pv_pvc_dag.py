@@ -109,3 +109,5 @@ with DAG(
     )
 
     create_pv_pvc >> extractor >> transformer >> cleanup
+
+dag = dag
