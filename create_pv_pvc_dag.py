@@ -2,8 +2,8 @@ from airflow import DAG
 from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import KubernetesPodOperator
 from airflow.operators.python import PythonOperator
 from airflow.utils.dates import days_ago
-
 from kubernetes import client, config
+from k8sUtils import create_pv_and_pvc, delete_pv_and_pvc
 
 PVC_NAME = "monday-etl-pvc"
 PV_NAME = "monday-etl-pv"
@@ -14,46 +14,21 @@ default_args = {
     'start_date': days_ago(1),
 }
 
-def create_pv_and_pvc():
-    config.load_incluster_config()
-    v1 = client.CoreV1Api()
-
-    pv = client.V1PersistentVolume(
-        metadata=client.V1ObjectMeta(
-            name=PV_NAME
-        ),
-        spec=client.V1PersistentVolumeSpec(
-            access_modes=["ReadWriteMany"],
-            capacity={"storage": "10Gi"},
-            persistent_volume_reclaim_policy="Delete",
-            volume_mode="Filesystem",
-            mount_options=["hard", "nfsvers=4.1"],
-            nfs=client.V1NFSVolumeSource(
-                path="/mnt/nfs/airflow/monday_etl",
-                server="10.40.0.33"
-            )
-        )
-    )
-
-    v1.create_persistent_volume(body=pv)
-
-    # Create PersistentVolumeClaim
-    pvc = client.V1PersistentVolumeClaim(
-        metadata=client.V1ObjectMeta(name=PVC_NAME),
-        spec=client.V1PersistentVolumeClaimSpec(
-            access_modes=["ReadWriteMany"],
-            resources=client.V1ResourceRequirements(requests={"storage": "10Gi"}),
-            volume_name=PV_NAME,
-        )
-    )
-    v1.create_namespaced_persistent_volume_claim(namespace=NAMESPACE, body=pvc)
-
-def delete_pv_and_pvc():
-    config.load_incluster_config()
-    v1 = client.CoreV1Api()
-    v1.delete_namespaced_persistent_volume_claim(name=PVC_NAME, namespace=NAMESPACE)
-    v1.delete_persistent_volume(name=PV_NAME)
-
+nfs_pv_config = {
+    "mode": ["ReadWriteMany"],
+    "storage": "10Gi",
+    "reclaim_policy": "Delete",
+    "nfs_path": "/mnt/nfs/airflow/monday_etl",
+    "nfs_server": "10.40.0.33",
+    "pv_name": "monday-etl-pv",
+    "pvc_name": "monday-etl-pvc",
+    "namespace": "airflow"
+}
+delete_pv_config = {
+    "pv_name":"monday-etl-pv",
+    "pvc_name":"monday-etl-pvc",
+    "namespace":"airflow"
+}
 with DAG(
     dag_id="monday_k8s_etl_with_pv",
     default_args=default_args,
@@ -64,7 +39,10 @@ with DAG(
 
     create_pv_pvc = PythonOperator(
         task_id="create_pv_pvc",
-        python_callable=create_pv_and_pvc
+        python_callable=create_pv_and_pvc,
+        op_kwargs={
+            "config": nfs_pv_config
+        }
     )
 
     volume = client.V1Volume(
@@ -105,6 +83,9 @@ with DAG(
     cleanup = PythonOperator(
         task_id="delete_pv_pvc",
         python_callable=delete_pv_and_pvc,
+        op_kwargs={
+            "config": delete_pv_config
+        },
         trigger_rule="all_done",  # Clean up even if task fails
     )
 
