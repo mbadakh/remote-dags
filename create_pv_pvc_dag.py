@@ -1,13 +1,14 @@
 from airflow import DAG
 from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import KubernetesPodOperator
+from airflow.kubernetes.secret import Secret
 from airflow.operators.python import PythonOperator
 from airflow.utils.dates import days_ago
-from kubernetes import client, config
+from kubernetes import client
 from k8sUtils import create_pv_and_pvc, delete_pv_and_pvc
 
 PVC_NAME = "monday-etl-pvc"
 PV_NAME = "monday-etl-pv"
-STORAGE_PATH = "/mnt/data/monday"  # Change this path to a valid hostPath directory on your K8s node
+STORAGE_PATH = "/mnt/nfs/airflow/monday_etl"  # Change this path to a valid hostPath directory on your K8s node
 NAMESPACE = "airflow"
 
 default_args = {
@@ -18,17 +19,25 @@ nfs_pv_config = {
     "mode": ["ReadWriteMany"],
     "storage": "10Gi",
     "reclaim_policy": "Delete",
-    "nfs_path": "/mnt/nfs/airflow/monday_etl",
+    "nfs_path": STORAGE_PATH,
     "nfs_server": "10.40.0.33",
-    "pv_name": "monday-etl-pv",
-    "pvc_name": "monday-etl-pvc",
-    "namespace": "airflow"
+    "pv_name": PV_NAME,
+    "pvc_name": PVC_NAME,
+    "namespace": NAMESPACE
 }
+
 delete_pv_config = {
-    "pv_name":"monday-etl-pv",
-    "pvc_name":"monday-etl-pvc",
-    "namespace":"airflow"
+    "pv_name":PV_NAME,
+    "pvc_name":PVC_NAME,
+    "namespace":NAMESPACE
 }
+
+extractor_secret = Secret(
+    deploy_type="env",           # inject as environment variable
+    deploy_target=None,          # None means all keys will be injected as their own env vars
+    secret="monday-extractor-secret",          # name of your secret in the `airflow` namespace
+)
+
 with DAG(
     dag_id="monday_k8s_etl_with_pv",
     default_args=default_args,
@@ -69,6 +78,7 @@ with DAG(
     extractor = KubernetesPodOperator(
         task_id="extractor",
         name="extractor",
+        secrets=[extractor_secret],
         image="registry.infinitylabs.co.il/ai/data-infrastructure/monday_extractor:51-65b0d7df",
         **common
     )
