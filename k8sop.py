@@ -1,5 +1,5 @@
 from airflow import DAG
-from airflow.providers.cncf.kubernetes.operators.kubernetes_pod_operator import KubernetesPodOperator
+from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import KubernetesPodOperator
 from airflow.utils.dates import days_ago
 
 with DAG(
