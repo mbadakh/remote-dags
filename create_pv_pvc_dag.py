@@ -78,28 +78,28 @@ with DAG(
         read_only=False,
     )
 
+    common = {
+        'namespace': NAMESPACE,
+        'is_delete_operator_pod': True,
+        'volumes': [volume],
+        'image_pull_secrets': [client.V1LocalObjectReference(name="gitlab-registry-secret")],
+        'volume_mounts': [volume_mount],
+        'get_logs': True
+
+    }
+
     extractor = KubernetesPodOperator(
         task_id="extractor",
         name="extractor",
         image="registry.infinitylabs.co.il/ai/data-infrastructure/monday_extractor:51-65b0d7df",
-        volumes=[volume],
-        image_pull_secrets=[client.V1LocalObjectReference(name="gitlab-registry-secret")],
-        volume_mounts=[volume_mount],
-        get_logs=True,
-        is_delete_operator_pod=True,
-        namespace=NAMESPACE,
+        **common
     )
 
     transformer = KubernetesPodOperator(
         task_id="transformer",
         name="transformer",
         image="registry.infinitylabs.co.il/ai/data-infrastructure/monday_transformer:58-c24e7ee0",
-        volumes=[volume],
-        image_pull_secrets=[client.V1LocalObjectReference(name="gitlab-registry-secret")],
-        volume_mounts=[volume_mount],
-        get_logs=True,
-        is_delete_operator_pod=True,
-        namespace=NAMESPACE,
+        **common
     )
 
     cleanup = PythonOperator(
