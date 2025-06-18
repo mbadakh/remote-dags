@@ -12,7 +12,7 @@ with DAG(
     task_1 = KubernetesPodOperator(
         task_id="task_1",
         name="task-1",
-        namespace="default",
+        namespace="airflow",
         image="alpine",
         cmds=["sh", "-c"],
         arguments=["echo 'Hello from Task 1' && sleep 5"],
@@ -22,7 +22,7 @@ with DAG(
     task_2 = KubernetesPodOperator(
         task_id="task_2",
         name="task-2",
-        namespace="default",
+        namespace="airflow",
         image="alpine",
         cmds=["sh", "-c"],
         arguments=["echo 'Hello from Task 2'"],
