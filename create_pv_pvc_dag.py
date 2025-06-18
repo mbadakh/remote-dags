@@ -86,7 +86,7 @@ with DAG(
         op_kwargs={
             "config": delete_pv_config
         },
-        trigger_rule="all_done",  # Clean up even if task fails
+        trigger_rule="all_done",
     )
 
     create_pv_pvc >> extractor >> transformer >> cleanup
