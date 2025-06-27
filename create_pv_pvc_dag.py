@@ -41,7 +41,7 @@ extractor_secret = Secret(
 with DAG(
     dag_id="monday_k8s_etl_with_pv",
     default_args=default_args,
-    schedule_interval=None,
+    schedule=None,
     catchup=False,
     tags=["k8s", "pv", "etl"]
 ) as dag:
