@@ -2,7 +2,7 @@ from airflow import DAG
 from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
 from airflow.providers.cncf.kubernetes.secret import Secret
 from airflow.operators.python import PythonOperator
-from airflow.utils.dates import days_ago
+from datetime import datetime, timedelta
 from kubernetes import client
 from k8sUtils import create_pv_and_pvc, delete_pv_and_pvc
 
@@ -12,7 +12,7 @@ STORAGE_PATH = "/mnt/nfs/airflow/monday_etl"  # Change this path to a valid host
 NAMESPACE = "airflow"
 
 default_args = {
-    'start_date': days_ago(1),
+    'start_date': datetime(2024, 1, 1),
 }
 
 nfs_pv_config = {
