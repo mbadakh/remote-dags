@@ -87,6 +87,10 @@ with DAG(
         task_id="transformer",
         name="transformer",
         image="registry.infinitylabs.co.il/ai/data-infrastructure/monday_transformer:58-c24e7ee0",
+        env_vars={
+            "AIRFLOW_API_BASE_URL": "http://airflow-api-server:8080/api/v2",
+            "AIRFLOW__API__AUTH_BACKEND": "airflow.api.auth.backend.basic_auth",
+        },
         **common
     )
 
